@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Filter Editor - Filter and Clean Text with Precision</title>
+    <meta name="description" content="A powerful text filtering tool for cleaning console logs, debugging userscripts, and processing text. Highlight text to remove matching lines instantly.">
+    <meta name="keywords" content="text filter, console log cleaner, userscript debugging, log parser, text editor">
+    <meta name="author" content="Matt">
+    
+    <!-- OpenGraph -->
+    <meta property="og:title" content="Text Filter Editor">
+    <meta property="og:description" content="Filter and clean text with precision. Perfect for console logs and userscript debugging.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://raw.githubusercontent.com/your-username/text-filter-editor/main/preview.png">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Text Filter Editor">
+    <meta name="twitter:description" content="Filter and clean text with precision. Perfect for console logs and userscript debugging.">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='15' fill='%230d1117'/><polygon points='70 20 30 20 45 45 45 70 55 75 55 45' fill='%2358a6ff'/></svg>">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        h1 { color: #58a6ff; font-weight: 500; font-size: 24px; }
+        .version-badge {
+            font-size: 11px;
+            background: #238636;
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+        .help-btn {
+            background: none;
+            border: 1px solid #30363d;
+            color: #8b949e;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.15s;
+        }
+        .help-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+        .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #161b22;
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+        }
+        .toggle-group label { font-size: 13px; color: #8b949e; cursor: pointer; white-space: nowrap; }
+        .switch { position: relative; width: 40px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #30363d;
+            border-radius: 22px;
+            transition: 0.2s;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background: #8b949e;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+        input:checked + .slider { background: #238636; }
+        input:checked + .slider:before { transform: translateX(18px); background: #fff; }
+        .toggle-group.invert input:checked + .slider { background: #a371f7; }
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.15s;
+            background: #21262d;
+            color: #c9d1d9;
+        }
+        .btn:hover { background: #30363d; border-color: #8b949e; }
+        .btn-primary { background: #238636; border-color: #238636; color: #fff; }
+        .btn-primary:hover { background: #2ea043; border-color: #2ea043; }
+        .btn-danger { background: #da3633; border-color: #da3633; color: #fff; }
+        .btn-danger:hover { background: #f85149; }
+        .btn-icon { padding: 8px 10px; display: flex; align-items: center; gap: 6px; }
+        .btn-icon svg { width: 16px; height: 16px; }
+        .dropdown { position: relative; }
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 6px 0;
+            min-width: 160px;
+            z-index: 100;
+            display: none;
+            margin-top: 4px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        .dropdown-menu.show { display: block; }
+        .dropdown-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #c9d1d9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dropdown-item:hover { background: #21262d; }
+        .dropdown-item svg { width: 16px; height: 16px; opacity: 0.7; }
+        .dropdown-divider { border-top: 1px solid #30363d; margin: 6px 0; }
+        .main-layout { display: grid; grid-template-columns: 1fr 300px 1fr; gap: 20px; }
+        @media (max-width: 1200px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .filters-panel { order: -1; }
+        }
+        .panel {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #1c2128;
+            border-bottom: 1px solid #30363d;
+        }
+        .panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .panel-badge {
+            font-size: 11px;
+            background: #30363d;
+            padding: 3px 8px;
+            border-radius: 10px;
+            color: #8b949e;
+        }
+        .editor-area { flex: 1; position: relative; min-height: 500px; }
+        textarea {
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+            background: transparent;
+            border: none;
+            color: #e6edf3;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            padding: 16px;
+            resize: none;
+            line-height: 1.6;
+        }
+        textarea:focus { outline: none; }
+        textarea::placeholder { color: #484f58; }
+        #output { background: #0d1117; }
+        .filters-panel { display: flex; flex-direction: column; }
+        .filters-toolbar { padding: 10px 12px; border-bottom: 1px solid #30363d; display: flex; gap: 8px; }
+        .filter-search {
+            flex: 1;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: #e6edf3;
+            font-size: 12px;
+        }
+        .filter-search:focus { outline: none; border-color: #58a6ff; }
+        .filter-search::placeholder { color: #484f58; }
+        .filters-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 450px;
+        }
+        .filter-category { margin-bottom: 8px; }
+        .filter-category-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            background: #0d1117;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            user-select: none;
+        }
+        .filter-category-header:hover { background: #161b22; }
+        .filter-category-header svg { width: 12px; height: 12px; transition: transform 0.2s; }
+        .filter-category.collapsed .filter-category-header svg { transform: rotate(-90deg); }
+        .filter-category.collapsed .filter-category-items { display: none; }
+        .filter-category-count {
+            margin-left: auto;
+            background: #30363d;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+        }
+        .filter-category-items { padding: 8px 0 0 0; display: flex; flex-direction: column; gap: 4px; }
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 12px;
+            transition: all 0.15s;
+        }
+        .filter-item:hover { border-color: #484f58; }
+        .filter-item.disabled { opacity: 0.5; }
+        .filter-item.console-preset { border-left: 3px solid #f0883e; }
+        .filter-item.user-filter { border-left: 3px solid #58a6ff; }
+        .filter-item.invalid { border-left: 3px solid #f85149; }
+        .filter-checkbox { width: 14px; height: 14px; accent-color: #58a6ff; cursor: pointer; flex-shrink: 0; }
+        .filter-text {
+            flex: 1;
+            font-family: 'Consolas', monospace;
+            color: #c9d1d9;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .filter-count {
+            font-size: 10px;
+            color: #f85149;
+            background: rgba(248, 81, 73, 0.15);
+            padding: 2px 6px;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        .filter-count.kept { color: #3fb950; background: rgba(63, 185, 80, 0.15); }
+        .filter-error { font-size: 10px; color: #f85149; padding: 2px 6px; flex-shrink: 0; }
+        .filter-remove {
+            background: none;
+            border: none;
+            color: #484f58;
+            cursor: pointer;
+            padding: 2px;
+            line-height: 1;
+            font-size: 16px;
+            transition: color 0.15s;
+        }
+        .filter-remove:hover { color: #f85149; }
+        .filters-actions { padding: 12px; border-top: 1px solid #30363d; display: flex; gap: 8px; flex-wrap: wrap; }
+        .filters-actions .btn { flex: 1; text-align: center; min-width: 80px; }
+        .instructions {
+            padding: 12px;
+            background: #0d1117;
+            border-top: 1px solid #30363d;
+            font-size: 11px;
+            color: #8b949e;
+            line-height: 1.5;
+        }
+        .instructions strong { color: #58a6ff; }
+        .instructions kbd { background: #30363d; padding: 2px 6px; border-radius: 4px; font-family: inherit; font-size: 10px; }
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            padding: 12px 20px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .stat { display: flex; align-items: baseline; gap: 6px; }
+        .stat-value { font-size: 18px; font-weight: 600; }
+        .stat-value.original { color: #8b949e; }
+        .stat-value.removed { color: #f85149; }
+        .stat-value.kept { color: #3fb950; }
+        .stat-value.reduction { color: #58a6ff; }
+        .stat-label { font-size: 12px; color: #484f58; }
+        .empty-filters { text-align: center; padding: 30px 20px; color: #484f58; }
+        .empty-filters svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: 0.5; }
+        .section-divider {
+            font-size: 10px;
+            color: #484f58;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 8px 4px 4px;
+            margin-top: 4px;
+        }
+        .highlight-hint {
+            position: fixed;
+            background: #1f6feb;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .highlight-hint.visible { opacity: 1; }
+        .regex-toggle {
+            font-size: 10px;
+            padding: 2px 5px;
+            background: #30363d;
+            border-radius: 3px;
+            color: #8b949e;
+            cursor: pointer;
+            flex-shrink: 0;
+            border: none;
+        }
+        .regex-toggle.active { background: #388bfd; color: #fff; }
+        .diff-container {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .diff-container.visible { display: grid; }
+        .diff-panel {
+            display: flex;
+            flex-direction: column;
+            background: #161b22;
+            min-height: 400px;
+            max-height: 600px;
+        }
+        .diff-panel:first-child { border-right: 1px solid #30363d; }
+        .diff-panel .panel-header { flex-shrink: 0; }
+        .diff-content {
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .diff-line { padding: 2px 16px; white-space: pre-wrap; word-break: break-all; min-height: 21px; }
+        .diff-line.removed { background: rgba(248, 81, 73, 0.15); color: #ffa198; }
+        .diff-line.kept { color: #e6edf3; }
+        .diff-line.empty-placeholder { background: rgba(48, 54, 61, 0.3); color: transparent; }
+        .diff-line-number {
+            display: inline-block;
+            width: 45px;
+            color: #484f58;
+            text-align: right;
+            margin-right: 12px;
+            user-select: none;
+            font-size: 12px;
+        }
+        .diff-line.removed .diff-line-number { color: #f85149; }
+        .diff-gutter { display: inline-block; width: 20px; text-align: center; margin-right: 8px; font-weight: bold; }
+        .diff-line.removed .diff-gutter { color: #f85149; }
+        .diff-line.kept .diff-gutter { color: #484f58; }
+        .match-highlight { background: rgba(255, 166, 87, 0.35); border-radius: 2px; padding: 0 2px; }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+        }
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-title { font-size: 18px; font-weight: 600; color: #e6edf3; }
+        .modal-close { background: none; border: none; color: #8b949e; font-size: 24px; cursor: pointer; padding: 0; line-height: 1; }
+        .modal-close:hover { color: #e6edf3; }
+        .modal-body { padding: 20px; }
+        .shortcut-list { display: flex; flex-direction: column; gap: 12px; }
+        .shortcut-item { display: flex; justify-content: space-between; align-items: center; }
+        .shortcut-keys { display: flex; gap: 4px; }
+        .shortcut-keys kbd { background: #30363d; padding: 4px 8px; border-radius: 4px; font-family: inherit; font-size: 12px; color: #e6edf3; }
+        .shortcut-desc { color: #8b949e; font-size: 13px; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #238636;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1001;
+        }
+        .toast.visible { transform: translateY(0); opacity: 1; }
+        .toast.error { background: #da3633; }
+        .hidden-input { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1>Text Filter Editor</h1>
+                <span class="version-badge">v1.0.0</span>
+                <button class="help-btn" onclick="showHelp()" title="Keyboard shortcuts">?</button>
+            </div>
+            <div class="header-controls">
+                <div class="toggle-group">
+                    <label for="diffMode">Diff View</label>
+                    <label class="switch"><input type="checkbox" id="diffMode"><span class="slider"></span></label>
+                </div>
+                <div class="toggle-group invert">
+                    <label for="invertMode">Invert</label>
+                    <label class="switch"><input type="checkbox" id="invertMode"><span class="slider"></span></label>
+                </div>
+                <div class="toggle-group">
+                    <label for="consoleMode">Console</label>
+                    <label class="switch"><input type="checkbox" id="consoleMode"><span class="slider"></span></label>
+                </div>
+                <div class="toggle-group">
+                    <label for="caseSensitive">Case</label>
+                    <label class="switch"><input type="checkbox" id="caseSensitive"><span class="slider"></span></label>
+                </div>
+                <div class="toggle-group">
+                    <label for="liveFilter">Live</label>
+                    <label class="switch"><input type="checkbox" id="liveFilter" checked><span class="slider"></span></label>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-icon" onclick="toggleDropdown('fileMenu')">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+                        Menu
+                    </button>
+                    <div class="dropdown-menu" id="fileMenu">
+                        <div class="dropdown-item" onclick="loadDemo()">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            Load Demo
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" onclick="exportFilters()">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            Export Filters
+                        </div>
+                        <div class="dropdown-item" onclick="document.getElementById('importInput').click()">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            Import Filters
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" onclick="downloadOutput()">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Download Output
+                        </div>
+                        <div class="dropdown-item" onclick="copyOutput()">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                            Copy Output
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" onclick="restoreOriginal()">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                            Restore Original
+                        </div>
+                        <div class="dropdown-item" onclick="clearAll()">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            Clear All
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Input</span>
+                    <span class="panel-badge" id="inputCount">0 lines</span>
+                </div>
+                <div class="editor-area">
+                    <textarea id="input" placeholder="Paste or type your text here...&#10;&#10;Select any text and press Enter to filter out all lines containing that text."></textarea>
+                </div>
+            </div>
+
+            <div class="panel filters-panel">
+                <div class="panel-header">
+                    <span class="panel-title">Filters</span>
+                    <span class="panel-badge" id="filterCount">0 active</span>
+                </div>
+                <div class="filters-toolbar">
+                    <input type="text" class="filter-search" id="filterSearch" placeholder="Search filters..." oninput="renderFilters()">
+                </div>
+                <div class="filters-content" id="filtersContent">
+                    <div class="empty-filters" id="emptyState">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                        </svg>
+                        <div>No filters yet</div>
+                        <div style="font-size: 11px; margin-top: 4px;">Highlight text in input to add filters</div>
+                    </div>
+                </div>
+                <div class="instructions">
+                    <strong>Quick:</strong> Select text + <kbd>Enter</kbd> to filter<br>
+                    <kbd>Ctrl+Z</kbd> undo | <kbd>Ctrl+Shift+C</kbd> copy | <kbd>?</kbd> help
+                </div>
+                <div class="filters-actions">
+                    <button class="btn" onclick="toggleAllFilters(true)">All On</button>
+                    <button class="btn" onclick="toggleAllFilters(false)">All Off</button>
+                    <button class="btn btn-danger" onclick="clearFilters()">Clear</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title" id="outputTitle">Output</span>
+                    <span class="panel-badge" id="outputCount">0 lines</span>
+                </div>
+                <div class="editor-area">
+                    <textarea id="output" readonly placeholder="Filtered output will appear here..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="diff-container" id="diffContainer">
+            <div class="diff-panel">
+                <div class="panel-header">
+                    <span class="panel-title">Original</span>
+                    <span class="panel-badge" id="diffOriginalCount">0 lines</span>
+                </div>
+                <div class="diff-content" id="diffLeft"></div>
+            </div>
+            <div class="diff-panel">
+                <div class="panel-header">
+                    <span class="panel-title">Filtered</span>
+                    <span class="panel-badge" id="diffFilteredCount">0 lines</span>
+                </div>
+                <div class="diff-content" id="diffRight"></div>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat"><span class="stat-value original" id="statOriginal">0</span><span class="stat-label">Original</span></div>
+            <div class="stat"><span class="stat-value removed" id="statRemoved">0</span><span class="stat-label">Removed</span></div>
+            <div class="stat"><span class="stat-value kept" id="statKept">0</span><span class="stat-label">Kept</span></div>
+            <div class="stat"><span class="stat-value reduction" id="statReduction">0%</span><span class="stat-label">Reduction</span></div>
+        </div>
+    </div>
+
+    <div class="highlight-hint" id="highlightHint">Press Enter to filter: "<span id="hintText"></span>"</div>
+    <input type="file" class="hidden-input" id="importInput" accept=".json" onchange="importFilters(event)">
+
+    <div class="modal-overlay" id="helpModal" onclick="if(event.target===this)hideHelp()">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">Keyboard Shortcuts</span>
+                <button class="modal-close" onclick="hideHelp()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcut-list">
+                    <div class="shortcut-item"><span class="shortcut-desc">Add filter from selection</span><div class="shortcut-keys"><kbd>Enter</kbd></div></div>
+                    <div class="shortcut-item"><span class="shortcut-desc">Undo last filter</span><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Z</kbd></div></div>
+                    <div class="shortcut-item"><span class="shortcut-desc">Copy output</span><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></div></div>
+                    <div class="shortcut-item"><span class="shortcut-desc">Download output</span><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>S</kbd></div></div>
+                    <div class="shortcut-item"><span class="shortcut-desc">Show this help</span><div class="shortcut-keys"><kbd>?</kbd></div></div>
+                    <div class="shortcut-item"><span class="shortcut-desc">Toggle diff view</span><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>D</kbd></div></div>
+                    <div class="shortcut-item"><span class="shortcut-desc">Toggle invert mode</span><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>I</kbd></div></div>
+                    <div class="shortcut-item"><span class="shortcut-desc">Close modal / dropdown</span><div class="shortcut-keys"><kbd>Esc</kbd></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const CONSOLE_PRESETS = {
+            'YouTube': [
+                { text: 'base.js:', desc: 'YouTube base.js' },
+                { text: 'kevlar_', desc: 'YouTube Kevlar modules' },
+                { text: 'polymer', desc: 'Polymer framework' },
+                { text: 'iron-', desc: 'Iron elements' },
+                { text: 'paper-', desc: 'Paper elements' },
+                { text: 'yt-', desc: 'YouTube elements' },
+            ],
+            'React / Frameworks': [
+                { text: 'hydrat', desc: 'Hydration (React/SSR)' },
+                { text: 'reconcil', desc: 'React reconciliation' },
+                { text: 'fiber', desc: 'React fiber' },
+                { text: 'beginWork', desc: 'React internals' },
+                { text: 'commitWork', desc: 'React commit phase' },
+                { text: 'zone.js', desc: 'Zone.js (Angular)' },
+                { text: 'scheduler', desc: 'Scheduler calls' },
+            ],
+            'Bundlers': [
+                { text: 'webpack', desc: 'Webpack internals' },
+                { text: 'chunk.js', desc: 'Chunk loaders' },
+                { text: 'vendor.js', desc: 'Vendor bundles' },
+                { text: 'runtime.js', desc: 'Runtime scripts' },
+                { text: 'polyfill', desc: 'Polyfills' },
+            ],
+            'Animations / Timing': [
+                { text: 'requestAnimationFrame', desc: 'RAF chains' },
+                { text: 'web-animations', desc: 'Web Animations API' },
+                { text: 'setTimeout', desc: 'setTimeout callbacks' },
+                { text: 'setInterval', desc: 'setInterval callbacks' },
+            ],
+            'Observers': [
+                { text: 'MutationObserver', desc: 'DOM mutations' },
+                { text: 'ResizeObserver', desc: 'Resize observations' },
+                { text: 'IntersectionObserver', desc: 'Intersection observations' },
+                { text: 'childList', desc: 'childList mutations' },
+                { text: 'subtree', desc: 'Subtree mutations' },
+                { text: 'attributes', desc: 'Attribute mutations' },
+            ],
+            'Generic Noise': [
+                { text: '(anonymous) @', desc: 'Anonymous function calls' },
+                { text: 'Promise.then', desc: 'Promise chains' },
+                { text: 'async function', desc: 'Async functions' },
+                { text: 'EventListener', desc: 'Event listeners' },
+                { text: 'dispatchEvent', desc: 'Event dispatch' },
+                { text: 'handleEvent', desc: 'Event handlers' },
+                { text: 'callback', desc: 'Generic callbacks' },
+                { text: '[native code]', desc: 'Native code calls' },
+                { text: '<computed>', desc: 'Computed values' },
+            ],
+            'Extensions': [
+                { text: 'extensions::', desc: 'Extension internals' },
+                { text: 'chrome-extension://', desc: 'Chrome extension URLs' },
+                { text: 'moz-extension://', desc: 'Firefox extension URLs' },
+            ],
+        };
+
+        let filters = [], consolePresets = [], selectedText = '', originalInput = '', filterHistory = [], collapsedCategories = new Set();
+        const inputEl = document.getElementById('input'), outputEl = document.getElementById('output'), filtersContent = document.getElementById('filtersContent'), emptyState = document.getElementById('emptyState'), highlightHint = document.getElementById('highlightHint'), hintText = document.getElementById('hintText'), consoleModeEl = document.getElementById('consoleMode'), caseSensitiveEl = document.getElementById('caseSensitive'), liveFilterEl = document.getElementById('liveFilter'), diffModeEl = document.getElementById('diffMode'), invertModeEl = document.getElementById('invertMode'), diffContainer = document.getElementById('diffContainer'), diffLeft = document.getElementById('diffLeft'), diffRight = document.getElementById('diffRight'), filterSearchEl = document.getElementById('filterSearch');
+
+        function init() {
+            loadFromStorage();
+            inputEl.addEventListener('input', onInputChange);
+            inputEl.addEventListener('mouseup', onTextSelect);
+            inputEl.addEventListener('keyup', onTextSelect);
+            inputEl.addEventListener('keydown', onKeyDown);
+            document.addEventListener('click', onDocumentClick);
+            document.addEventListener('keydown', onGlobalKeyDown);
+            consoleModeEl.addEventListener('change', onConsoleModeChange);
+            caseSensitiveEl.addEventListener('change', () => { applyFilters(); saveToStorage(); });
+            liveFilterEl.addEventListener('change', () => { applyFilters(); saveToStorage(); });
+            diffModeEl.addEventListener('change', () => { onDiffModeChange(); saveToStorage(); });
+            invertModeEl.addEventListener('change', () => { onInvertModeChange(); saveToStorage(); });
+            diffLeft.addEventListener('scroll', () => { if (diffModeEl.checked) diffRight.scrollTop = diffLeft.scrollTop; });
+            diffRight.addEventListener('scroll', () => { if (diffModeEl.checked) diffLeft.scrollTop = diffRight.scrollTop; });
+            inputEl.addEventListener('paste', () => { setTimeout(() => { if (!originalInput || originalInput.length < inputEl.value.length) originalInput = inputEl.value; updateLineCount('input'); applyFilters(); saveToStorage(); }, 10); });
+            updateLineCount('input'); updateLineCount('output'); renderFilters(); applyFilters();
+        }
+
+        function onInputChange() { updateLineCount('input'); if (liveFilterEl.checked) applyFilters(); saveToStorage(); }
+        function onTextSelect(e) { const sel = inputEl.value.substring(inputEl.selectionStart, inputEl.selectionEnd); if (sel && sel.trim() && sel.length < 200) { selectedText = sel.trim(); showHighlightHint(e); } else { selectedText = ''; hideHighlightHint(); } }
+        function showHighlightHint(e) { hintText.textContent = selectedText.length > 40 ? selectedText.substring(0, 40) + '...' : selectedText; highlightHint.style.left = Math.min(e.clientX + 10, window.innerWidth - 250) + 'px'; highlightHint.style.top = (e.clientY - 40) + 'px'; highlightHint.classList.add('visible'); }
+        function hideHighlightHint() { highlightHint.classList.remove('visible'); }
+        function onKeyDown(e) { if (e.key === 'Enter' && selectedText) { e.preventDefault(); addFilter(selectedText); hideHighlightHint(); inputEl.selectionStart = inputEl.selectionEnd; selectedText = ''; } }
+        function onGlobalKeyDown(e) {
+            if (e.key === '?' && document.activeElement !== inputEl && document.activeElement !== filterSearchEl) { e.preventDefault(); showHelp(); return; }
+            if (e.key === 'Escape') { hideHelp(); closeAllDropdowns(); return; }
+            if (e.ctrlKey && e.key === 'z' && document.activeElement !== inputEl) { e.preventDefault(); undoLastFilter(); return; }
+            if (e.ctrlKey && e.shiftKey && e.key === 'C') { e.preventDefault(); copyOutput(); return; }
+            if (e.ctrlKey && e.key === 's') { e.preventDefault(); downloadOutput(); return; }
+            if (e.ctrlKey && e.key === 'd') { e.preventDefault(); diffModeEl.checked = !diffModeEl.checked; onDiffModeChange(); return; }
+            if (e.ctrlKey && e.key === 'i') { e.preventDefault(); invertModeEl.checked = !invertModeEl.checked; onInvertModeChange(); return; }
+        }
+        function onDocumentClick(e) { if (e.target === highlightHint || highlightHint.contains(e.target)) { if (selectedText) { addFilter(selectedText); hideHighlightHint(); selectedText = ''; } } else if (!inputEl.contains(e.target)) hideHighlightHint(); if (!e.target.closest('.dropdown')) closeAllDropdowns(); }
+        function onConsoleModeChange() {
+            if (consoleModeEl.checked) {
+                consolePresets = [];
+                for (const [cat, presets] of Object.entries(CONSOLE_PRESETS)) for (const p of presets) consolePresets.push({ text: p.text, enabled: true, isPreset: true, desc: p.desc, category: cat });
+                for (const preset of consolePresets) filterInput(preset.text, false);
+            } else consolePresets = [];
+            renderFilters(); applyFilters(); saveToStorage();
+        }
+        function onDiffModeChange() { diffModeEl.checked ? (diffContainer.classList.add('visible'), renderDiff()) : diffContainer.classList.remove('visible'); }
+        function onInvertModeChange() { document.getElementById('outputTitle').textContent = invertModeEl.checked ? 'Output (Kept Only)' : 'Output'; applyFilters(); }
+        function addFilter(text) {
+            if (filters.some(f => f.text === text) || consolePresets.some(f => f.text === text)) { showToast('Filter already exists', true); return; }
+            const newFilter = { text, enabled: true, isRegex: false, desc: '' };
+            filters.push(newFilter);
+            filterHistory.push({ type: 'add', filter: newFilter, index: filters.length - 1 });
+            filterInput(text, false); renderFilters(); applyFilters(); saveToStorage();
+        }
+        function undoLastFilter() { if (!filterHistory.length) { showToast('Nothing to undo', true); return; } const last = filterHistory.pop(); if (last.type === 'add') { filters.splice(last.index, 1); restoreOriginal(); showToast('Filter removed'); } renderFilters(); applyFilters(); saveToStorage(); }
+        function filterInput(pattern, isRegex) { const input = inputEl.value; if (!input) return; const lines = input.split('\n'), caseSensitive = caseSensitiveEl.checked, kept = []; for (const line of lines) if (!lineMatches(line, pattern, isRegex, caseSensitive)) kept.push(line); inputEl.value = kept.join('\n'); updateLineCount('input'); }
+        function removeFilter(index, isPreset) { isPreset ? consolePresets.splice(index, 1) : filters.splice(index, 1); renderFilters(); applyFilters(); saveToStorage(); }
+        function toggleFilter(index, isPreset) { isPreset ? (consolePresets[index].enabled = !consolePresets[index].enabled) : (filters[index].enabled = !filters[index].enabled); renderFilters(); applyFilters(); saveToStorage(); }
+        function toggleRegex(index) { filters[index].isRegex = !filters[index].isRegex; renderFilters(); applyFilters(); saveToStorage(); }
+        function toggleCategory(cat) { collapsedCategories.has(cat) ? collapsedCategories.delete(cat) : collapsedCategories.add(cat); renderFilters(); }
+        function validateRegex(p) { try { new RegExp(p); return true; } catch { return false; } }
+        function renderFilters() {
+            const search = filterSearchEl.value.toLowerCase(), userFilters = filters.filter(f => !search || f.text.toLowerCase().includes(search)), presets = consolePresets.filter(f => !search || f.text.toLowerCase().includes(search) || (f.desc && f.desc.toLowerCase().includes(search)));
+            const hasVisible = userFilters.length > 0 || presets.length > 0;
+            emptyState.style.display = hasVisible ? 'none' : 'block';
+            if (!hasVisible) { emptyState.innerHTML = search ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg><div>No matching filters</div>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg><div>No filters yet</div><div style="font-size:11px;margin-top:4px;">Highlight text in input to add filters</div>'; filtersContent.innerHTML = ''; filtersContent.appendChild(emptyState); document.getElementById('filterCount').textContent = '0 active'; return; }
+            let html = '';
+            if (userFilters.length > 0) { html += '<div class="section-divider">User Filters</div>'; userFilters.forEach((f, i) => { const idx = filters.indexOf(f), mc = countMatches(f.text, f.isRegex), valid = !f.isRegex || validateRegex(f.text), cc = invertModeEl.checked ? 'kept' : ''; html += `<div class="filter-item user-filter ${f.enabled ? '' : 'disabled'} ${!valid ? 'invalid' : ''}"><input type="checkbox" class="filter-checkbox" ${f.enabled ? 'checked' : ''} onchange="toggleFilter(${idx},false)"><span class="filter-text" title="${escapeHtml(f.text)}">${escapeHtml(f.text)}</span>${!valid ? '<span class="filter-error">Invalid regex</span>' : ''}${mc > 0 && valid ? `<span class="filter-count ${cc}">${mc}</span>` : ''}<button class="regex-toggle ${f.isRegex ? 'active' : ''}" onclick="toggleRegex(${idx})" title="Toggle regex">.*</button><button class="filter-remove" onclick="removeFilter(${idx},false)">&times;</button></div>`; }); }
+            if (presets.length > 0) { const byCat = {}; presets.forEach((f, i) => { if (!byCat[f.category]) byCat[f.category] = []; byCat[f.category].push({ filter: f, index: consolePresets.indexOf(f) }); }); for (const [cat, items] of Object.entries(byCat)) { const collapsed = collapsedCategories.has(cat), enabled = items.filter(i => i.filter.enabled).length; html += `<div class="filter-category ${collapsed ? 'collapsed' : ''}"><div class="filter-category-header" onclick="toggleCategory('${cat}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>${cat}<span class="filter-category-count">${enabled}/${items.length}</span></div><div class="filter-category-items">`; for (const { filter: f, index } of items) { const mc = countMatches(f.text, false), cc = invertModeEl.checked ? 'kept' : ''; html += `<div class="filter-item console-preset ${f.enabled ? '' : 'disabled'}"><input type="checkbox" class="filter-checkbox" ${f.enabled ? 'checked' : ''} onchange="toggleFilter(${index},true)"><span class="filter-text" title="${escapeHtml(f.desc || f.text)}">${escapeHtml(f.text)}</span>${mc > 0 ? `<span class="filter-count ${cc}">${mc}</span>` : ''}<button class="filter-remove" onclick="removeFilter(${index},true)">&times;</button></div>`; } html += '</div></div>'; } }
+            filtersContent.innerHTML = html;
+            document.getElementById('filterCount').textContent = `${[...filters, ...consolePresets].filter(f => f.enabled).length} active`;
+        }
+        function countMatches(text, isRegex) { const src = originalInput || inputEl.value; if (!src) return 0; const lines = src.split('\n'), cs = caseSensitiveEl.checked; let c = 0; for (const l of lines) if (lineMatches(l, text, isRegex, cs)) c++; return c; }
+        function lineMatches(line, pattern, isRegex, cs) { try { if (isRegex) return new RegExp(pattern, cs ? '' : 'i').test(line); return cs ? line.includes(pattern) : line.toLowerCase().includes(pattern.toLowerCase()); } catch { return false; } }
+        function applyFilters() {
+            const src = originalInput || inputEl.value; if (!src) { outputEl.value = ''; updateStats(0, 0, 0); updateLineCount('output'); renderDiff(); return; }
+            const lines = src.split('\n'), cs = caseSensitiveEl.checked, all = [...filters, ...consolePresets].filter(f => f.enabled), inv = invertModeEl.checked, kept = [];
+            for (const l of lines) { let m = false; for (const f of all) if (lineMatches(l, f.text, f.isRegex, cs)) { m = true; break; } if (inv ? m : !m) kept.push(l); }
+            outputEl.value = kept.join('\n'); updateStats(lines.length, lines.length - kept.length, kept.length); updateLineCount('output'); renderFilters(); renderDiff();
+        }
+        function renderDiff() {
+            if (!diffModeEl.checked) return;
+            const src = originalInput || inputEl.value; if (!src) { diffLeft.innerHTML = diffRight.innerHTML = '<div class="diff-line kept" style="color:#484f58;padding:20px;">No content</div>'; return; }
+            const lines = src.split('\n'), cs = caseSensitiveEl.checked, all = [...filters, ...consolePresets].filter(f => f.enabled), inv = invertModeEl.checked;
+            let lh = '', rh = '', rn = 0;
+            for (let i = 0; i < lines.length; i++) { const l = lines[i], n = i + 1; let mf = null; for (const f of all) if (lineMatches(l, f.text, f.isRegex, cs)) { mf = f; break; } const rm = inv ? !mf : !!mf; let el = escapeHtml(l) || ' ';
+                if (mf && !mf.isRegex) { const idx = cs ? l.indexOf(mf.text) : l.toLowerCase().indexOf(mf.text.toLowerCase()); if (idx >= 0) el = `${escapeHtml(l.substring(0, idx))}<span class="match-highlight">${escapeHtml(l.substring(idx, idx + mf.text.length))}</span>${escapeHtml(l.substring(idx + mf.text.length))}`; }
+                if (rm) { lh += `<div class="diff-line removed"><span class="diff-line-number">${n}</span><span class="diff-gutter">-</span>${el}</div>`; rh += `<div class="diff-line empty-placeholder"><span class="diff-line-number"></span><span class="diff-gutter"></span>&nbsp;</div>`; } else { rn++; lh += `<div class="diff-line kept"><span class="diff-line-number">${n}</span><span class="diff-gutter"></span>${el}</div>`; rh += `<div class="diff-line kept"><span class="diff-line-number">${rn}</span><span class="diff-gutter"></span>${escapeHtml(l) || ' '}</div>`; }
+            }
+            diffLeft.innerHTML = lh; diffRight.innerHTML = rh;
+            document.getElementById('diffOriginalCount').textContent = `${lines.length} lines`; document.getElementById('diffFilteredCount').textContent = `${rn} lines`;
+        }
+        function updateStats(o, r, k) { document.getElementById('statOriginal').textContent = o; document.getElementById('statRemoved').textContent = r; document.getElementById('statKept').textContent = k; document.getElementById('statReduction').textContent = o > 0 ? Math.round((r / o) * 100) + '%' : '0%'; }
+        function updateLineCount(id) { const el = document.getElementById(id), lines = el.value ? el.value.split('\n').length : 0; document.getElementById(id + 'Count').textContent = `${lines} line${lines !== 1 ? 's' : ''}`; }
+        function toggleAllFilters(en) { filters.forEach(f => f.enabled = en); consolePresets.forEach(f => f.enabled = en); renderFilters(); applyFilters(); saveToStorage(); }
+        function clearFilters() { filters = []; filterHistory = []; renderFilters(); applyFilters(); saveToStorage(); }
+        function clearAll() { inputEl.value = outputEl.value = ''; filters = []; filterHistory = []; originalInput = ''; renderFilters(); updateLineCount('input'); updateLineCount('output'); updateStats(0, 0, 0); renderDiff(); saveToStorage(); closeAllDropdowns(); }
+        function restoreOriginal() { if (originalInput) { inputEl.value = originalInput; updateLineCount('input'); applyFilters(); renderDiff(); } closeAllDropdowns(); }
+        function copyOutput() { navigator.clipboard.writeText(outputEl.value).then(() => showToast('Copied!')).catch(() => { outputEl.select(); document.execCommand('copy'); showToast('Copied!'); }); closeAllDropdowns(); }
+        function downloadOutput() { const b = new Blob([outputEl.value], { type: 'text/plain' }), u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = 'filtered-output.txt'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u); showToast('Downloaded!'); closeAllDropdowns(); }
+        function exportFilters() { const d = { version: '1.0.0', filters, settings: { caseSensitive: caseSensitiveEl.checked, liveFilter: liveFilterEl.checked, invertMode: invertModeEl.checked } }, b = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' }), u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = 'text-filter-presets.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u); showToast('Exported!'); closeAllDropdowns(); }
+        function importFilters(e) { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => { try { const d = JSON.parse(ev.target.result); if (d.filters && Array.isArray(d.filters)) { let imp = 0; for (const fi of d.filters) if (fi.text && !filters.some(ex => ex.text === fi.text)) { filters.push({ text: fi.text, enabled: fi.enabled !== false, isRegex: fi.isRegex || false, desc: fi.desc || '' }); imp++; } if (d.settings) { if (d.settings.caseSensitive !== undefined) caseSensitiveEl.checked = d.settings.caseSensitive; if (d.settings.liveFilter !== undefined) liveFilterEl.checked = d.settings.liveFilter; if (d.settings.invertMode !== undefined) { invertModeEl.checked = d.settings.invertMode; onInvertModeChange(); } } renderFilters(); applyFilters(); saveToStorage(); showToast(`Imported ${imp} filters!`); } else showToast('Invalid file', true); } catch { showToast('Error reading file', true); } }; r.readAsText(f); e.target.value = ''; closeAllDropdowns(); }
+        function loadDemo() { const d = `(anonymous) @ web-animations-next-lite.min.js:96\nuserscript.html?name=YTKit:1197 [YTKit] Mutation rule error: TypeError: Cannot create property\n    at userscript.html?name=YTKit:2173:54\n    at Array.forEach (<anonymous>)\n    at Object._hideButtons (userscript.html?name=YTKit:2164:56)\nrunMutationRules @ userscript.html?name=YTKit:1197\nobserverCallback @ userscript.html?name=YTKit:1201\nchildList\n(anonymous) @ m=kevlar_base_module:3568\n(anonymous) @ base.js:325\nlp @ base.js:1831\nupdateValue @ base.js:6082\nonProgress @ base.js:7885\n(anonymous) @ web-animations-next-lite.min.js:96\nrequestAnimationFrame\nwindow.requestAnimationFrame @ web-animations-next-lite.min.js:96\n(anonymous) @ base.js:5878\nPromise.then\nscheduler @ base.js:4521\nhydrate @ react-dom.js:1523\nfiber @ react.js:892\nreconciler @ react.js:1205\ncommitWork @ react.js:2341\n[INFO] Script loaded successfully\n[YTKit] Feature enabled: hideShorts\nchrome-extension://abc123/content.js:45 Extension initialized\n[ERROR] Failed to parse config: SyntaxError: Unexpected token\nwebpack:///src/index.js:123 Module loaded\nvendor.js:8821 Polyfill applied for IntersectionObserver`; inputEl.value = d; originalInput = d; updateLineCount('input'); applyFilters(); showToast('Demo loaded!'); closeAllDropdowns(); }
+        function toggleDropdown(id) { const m = document.getElementById(id), open = m.classList.contains('show'); closeAllDropdowns(); if (!open) m.classList.add('show'); }
+        function closeAllDropdowns() { document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show')); }
+        function showHelp() { document.getElementById('helpModal').classList.add('visible'); }
+        function hideHelp() { document.getElementById('helpModal').classList.remove('visible'); }
+        function showToast(msg, err = false) { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast' + (err ? ' error' : ''); t.classList.add('visible'); setTimeout(() => t.classList.remove('visible'), 2500); }
+        function saveToStorage() { try { localStorage.setItem('textFilterEditor', JSON.stringify({ filters, originalInput, currentInput: inputEl.value, settings: { caseSensitive: caseSensitiveEl.checked, liveFilter: liveFilterEl.checked, diffMode: diffModeEl.checked, invertMode: invertModeEl.checked, consoleMode: consoleModeEl.checked } })); } catch {} }
+        function loadFromStorage() { try { const s = localStorage.getItem('textFilterEditor'); if (!s) return; const d = JSON.parse(s); if (d.filters) filters = d.filters; if (d.originalInput) originalInput = d.originalInput; if (d.currentInput) inputEl.value = d.currentInput; if (d.settings) { caseSensitiveEl.checked = d.settings.caseSensitive || false; liveFilterEl.checked = d.settings.liveFilter !== false; diffModeEl.checked = d.settings.diffMode || false; invertModeEl.checked = d.settings.invertMode || false; if (d.settings.consoleMode) { consoleModeEl.checked = true; consolePresets = []; for (const [c, ps] of Object.entries(CONSOLE_PRESETS)) for (const p of ps) consolePresets.push({ text: p.text, enabled: true, isPreset: true, desc: p.desc, category: c }); } if (d.settings.diffMode) diffContainer.classList.add('visible'); if (d.settings.invertMode) document.getElementById('outputTitle').textContent = 'Output (Kept Only)'; } } catch {} }
+        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+        init();
+    </script>
+</body>
+</html>
