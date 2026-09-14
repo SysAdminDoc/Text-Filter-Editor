@@ -4,6 +4,16 @@
 [![GitHub Pages](https://img.shields.io/badge/demo-live-brightgreen)](https://your-username.github.io/text-filter-editor/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
+<p align="center">
+  <a href="https://ko-fi.com/X8K126YVER">
+    <img height="42" src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" alt="Buy me a coffee on Ko-fi" />
+  </a>
+</p>
+
+<p align="center">
+  <sub><em>If this project helps you, a coffee helps me keep working on it.</em></sub>
+</p>
+
 A powerful, browser-based text filtering tool. Highlight text to instantly remove all matching lines. Perfect for cleaning console logs, debugging userscripts, and filtering large text files.
 
 ![Text Filter Editor Screenshot](preview.png)
